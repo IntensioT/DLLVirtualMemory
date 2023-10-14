@@ -3,8 +3,7 @@
 #include "tableMash.h"
 #include "TableCell.h"
 
-#include "MemoryCheck.h"
-
+typedef HRESULT(CALLBACK* LPFNDLLFUNC1)(HANDLE, char*);
 using namespace std;
 
 wstring userInp = L"Test123";
@@ -15,6 +14,35 @@ TableMash* tm;
 TableCell table[cellRows][N];
 HINSTANCE hInst;
 
+
+HRESULT LoadAndCallChangeWordFunction(HANDLE hProcess, char* searchWord)
+{
+	HINSTANCE hDLL;               // Handle to DLL
+	LPFNDLLFUNC1 lpfnDllFunc1;    // Function pointer
+	HRESULT hrReturnVal;
+
+	hDLL = LoadLibrary(L"ImplicitDll");
+	if (NULL != hDLL)
+	{
+		lpfnDllFunc1 = (LPFNDLLFUNC1)GetProcAddress(hDLL, "changeWord");
+		if (NULL != lpfnDllFunc1)
+		{
+			// call the function
+			hrReturnVal = lpfnDllFunc1(hProcess, searchWord);
+		}
+		else
+		{
+			// report the error
+			hrReturnVal = ERROR_DELAY_LOAD_FAILED;
+		}
+		FreeLibrary(hDLL);
+	}
+	else
+	{
+		hrReturnVal = ERROR_DELAY_LOAD_FAILED;
+	}
+	return hrReturnVal;
+}
 
 LRESULT CALLBACK WindowProc (HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
@@ -74,8 +102,8 @@ LRESULT CALLBACK WindowProc (HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 		{
 		case VK_UP:
 			// Process the UP ARROW key. 
-			changeWord(GetCurrentProcess(), (char*)"Made in BSUIR");
-
+			//changeWord(GetCurrentProcess(), (char*)"Made in BSUIR");
+			LoadAndCallChangeWordFunction(GetCurrentProcess(), (char*)"Made in BSUIR");
 			return 0;
 		}
 	}
@@ -117,3 +145,4 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine
 
 	return 0;
 }
+
